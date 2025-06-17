@@ -9,7 +9,11 @@ from st_aggrid import GridOptionsBuilder, AgGrid, JsCode
 
 # ---- Google Sheets Setup ----
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-creds = Credentials.from_service_account_file("credentials.json", scopes=SCOPE)
+creds = Credentials.from_service_account_info(
+    st.secrets["gcp_service_account"],
+    scopes=SCOPE
+)
+
 client = gspread.authorize(creds)
 sheet = client.open("Project Tracker").sheet1
 
