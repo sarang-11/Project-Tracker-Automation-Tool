@@ -7,7 +7,7 @@ from io import StringIO
 import plotly.express as px
 from st_aggrid import GridOptionsBuilder, AgGrid, JsCode
 
-# ---- Google Sheets Setup ----
+# Google Sheets Setup 
 SCOPE = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
 creds = Credentials.from_service_account_info(
     st.secrets["gcp_service_account"],
@@ -17,15 +17,15 @@ creds = Credentials.from_service_account_info(
 client = gspread.authorize(creds)
 sheet = client.open("Project Tracker").sheet1
 
-# ---- Auto Initialize Sheet Header if Empty ----
+# Auto Initialize Sheet Header if Empty
 if len(sheet.get_all_values()) == 0:
     sheet.append_row(['Project Name', 'Description', 'Status', 'Start Date', 'Due Date'])
 
-# ---- Read Data ----
+# Read Data 
 data = sheet.get_all_records()
 df = pd.DataFrame(data)
 
-# ---- Status & Progress Mapping ----
+# Status & Progress Mapping 
 progress_map = {
     "Not Started": 0,
     "In Progress": 50,
@@ -33,7 +33,7 @@ progress_map = {
     "Completed": 100
 }
 
-# ---- Convert Dates & Calculate ----
+# Convert Dates & Calculate 
 if not df.empty:
     df["Start Date"] = pd.to_datetime(df["Start Date"])
     df["Due Date"] = pd.to_datetime(df["Due Date"])
@@ -41,8 +41,8 @@ if not df.empty:
     df["Days Left"] = (df["Due Date"] - pd.Timestamp.today()).dt.days
     df["Progress"] = df["Status"].map(progress_map)
 
-# ---- Streamlit Config ----
-st.set_page_config(page_title="📌 Project Tracker", layout="wide")
+# Streamlit Config 
+st.set_page_config(page_title="Project Tracker", layout="wide")
 
 st.markdown("""
     <style>
@@ -53,7 +53,7 @@ st.markdown("""
 
 st.markdown("<h1 style='text-align: center; color: white;'>📌 Internal Project Tracker</h1>", unsafe_allow_html=True)
 
-# ---- Add New Project ----
+# Add New Project
 with st.expander("➕ Add New Project"):
     with st.form("project_form"):
         pname = st.text_input("Project Name")
@@ -67,23 +67,23 @@ with st.expander("➕ Add New Project"):
             sheet.append_row([pname, desc, status, str(sdate), str(ddate)])
             st.success(f"✅ Project '{pname}' added!")
 
-# ---- Filter Projects ----
+# Filter Projects 
 st.sidebar.markdown("### 🔍 Filter Projects")
 status_filter = st.sidebar.multiselect("Filter by Status", list(progress_map.keys()), default=list(progress_map.keys()))
 
 filtered_df = df[df['Status'].isin(status_filter)] if not df.empty else pd.DataFrame()
 
-# ---- Display Projects ----
+# Display Projects 
 if filtered_df.empty:
     st.info("No projects to display.")
 else:
     for i, row in filtered_df.iterrows():
-        with st.expander(f"📁 {row['Project Name']}"):
-            st.write(f"📝 **Description**: {row['Description']}")
-            st.write(f"📌 **Status**: {row['Status']}")
+        with st.expander(f" {row['Project Name']}"):
+            st.write(f" **Description**: {row['Description']}")
+            st.write(f" **Status**: {row['Status']}")
             st.progress(int(row["Progress"]))
-            st.write(f"⏰ **Start Date**: {row['Start Date'].date()}")
-            st.write(f"📅 **Due Date**: {row['Due Date'].date()}")
+            st.write(f" **Start Date**: {row['Start Date'].date()}")
+            st.write(f" **Due Date**: {row['Due Date'].date()}")
 
             with st.form(f"edit_form_{i}"):
                 new_status = st.selectbox("Update Status", list(progress_map.keys()), index=list(progress_map.keys()).index(row["Status"]))
@@ -91,7 +91,7 @@ else:
                     sheet.update_cell(i + 2, 3, new_status)
                     st.success(f"✅ Status updated to '{new_status}'")
 
-# ---- AI Summary ----
+# AI Summary 
 if not df.empty:
     st.subheader("🪄 Project Summary")
     total_projects = len(df)
@@ -102,9 +102,9 @@ if not df.empty:
     summary = f"You have {in_progress} project(s) in progress, {due_this_week} due this week. {int((on_track/total_projects)*100)}% of your projects are on track."
     st.success(summary)
 
-# ---- Calendar View ----
+# Calendar View 
 if not df.empty:
-    st.subheader("📅 Calendar View")
+    st.subheader("Calendar View")
     cal_df = df[["Project Name", "Start Date", "Due Date", "Status"]].copy()
     cal_df["Start Date"] = cal_df["Start Date"].dt.strftime('%Y-%m-%d')
     cal_df["Due Date"] = cal_df["Due Date"].dt.strftime('%Y-%m-%d')
@@ -116,9 +116,9 @@ if not df.empty:
     gb.configure_grid_options(domLayout='normal')
     AgGrid(cal_df, gridOptions=gb.build(), theme="streamlit", enable_enterprise_modules=False, fit_columns_on_grid_load=True)
 
-# ---- Visuals ----
+# Visuals
 if not df.empty:
-    st.subheader("📊 Visual Overview")
+    st.subheader("Visual Overview")
 
     status_colors = {
         "Not Started": "#636E72",
@@ -134,7 +134,7 @@ if not df.empty:
         status_chart,
         names="Status",
         values="Count",
-        title="📌 Project Status Distribution",
+        title="Project Status Distribution",
         color="Status",
         color_discrete_map=status_colors
     )
@@ -145,14 +145,14 @@ if not df.empty:
         df.sort_values("Start Date"),
         x_start="Start Date", x_end="Due Date",
         y="Project Name", color="Status",
-        title="📅 Project Timeline",
+        title="Project Timeline",
         color_discrete_map=status_colors
     )
     fig2.update_yaxes(autorange="reversed")
     st.plotly_chart(fig2, use_container_width=True)
 
-# ---- Export ----
-st.subheader("📤 Export Project Data")
+# Export 
+st.subheader("Export Project Data")
 col1, col2 = st.columns(2)
 
 with col1:
